@@ -1,4 +1,4 @@
 package com.example.moviedb.presentation
 
-class movieViewModel {
+class MovieViewModel {
 }

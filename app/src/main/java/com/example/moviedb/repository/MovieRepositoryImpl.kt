@@ -1,4 +1,4 @@
 package com.example.moviedb.repository
 
-class MovieRepositoryImpl {
+class MovieRepositoryImpl: MovieRepository {
 }
