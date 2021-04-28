@@ -6,16 +6,21 @@ import androidx.fragment.app.Fragment
 import android.view.View
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
+import androidx.recyclerview.widget.ConcatAdapter
 import com.example.moviedb.R
 import com.example.moviedb.core.Result
+import com.example.moviedb.data.model.Movie
 import com.example.moviedb.data.remote.MovieDataSource
 import com.example.moviedb.databinding.FragmentMovieBinding
 import com.example.moviedb.presentation.MovieViewModel
 import com.example.moviedb.presentation.MovieViewModelFactory
 import com.example.moviedb.repository.MovieRepositoryImpl
 import com.example.moviedb.repository.RetrofitClient
+import com.example.moviedb.ui.movie.adapters.concat.PopularConcatAdapter
+import com.example.moviedb.ui.movie.adapters.concat.TopRatedConcatAdapter
+import com.example.moviedb.ui.movie.adapters.concat.UpComingConcatAdapter
 
-class MovieFragment : Fragment(R.layout.fragment_movie) {
+class MovieFragment : Fragment(R.layout.fragment_movie), MovieAdapter.OnMovieClickListener {
 
     private lateinit var binding: FragmentMovieBinding
     private val viewModel by viewModels<MovieViewModel> {
@@ -26,51 +31,38 @@ class MovieFragment : Fragment(R.layout.fragment_movie) {
         )
     }
 
+    private lateinit var concatAdapter: ConcatAdapter
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding = FragmentMovieBinding.bind(view)
 
-        viewModel.fetchUpcomingMovies().observe(viewLifecycleOwner, Observer { result ->
+        concatAdapter = ConcatAdapter()
+
+        viewModel.fetchMainScreenMovies().observe(viewLifecycleOwner, Observer { result ->
             when(result){
                 is Result.Loading -> {
-                    Log.d("Livedata", "Loading")
+                    binding.progressBar.visibility = View.VISIBLE
                 }
                 is Result.Success -> {
-                    Log.d("Livedata", "${result.data}")
+                    binding.progressBar.visibility = View.GONE
+                    concatAdapter.apply {
+                        addAdapter(0, UpComingConcatAdapter(MovieAdapter(result.data.first.results, this@MovieFragment)))
+                        addAdapter(1, TopRatedConcatAdapter(MovieAdapter(result.data.second.results, this@MovieFragment)))
+                        addAdapter(2, PopularConcatAdapter(MovieAdapter(result.data.third.results, this@MovieFragment)))
+                    }
+
+                    binding.rvMovie.adapter = concatAdapter
                 }
                 is Result.Failure -> {
+                    binding.progressBar.visibility = View.GONE
                     Log.d("Error", "${result.exception}")
                 }
             }
         })
+    }
 
-        viewModel.fetchPopularMovies().observe(viewLifecycleOwner, Observer { result ->
-            when(result){
-                is Result.Loading -> {
-                    Log.d("Livedata", "Loading")
-                }
-                is Result.Success -> {
-                    Log.d("Livedata", "${result.data}")
-                }
-                is Result.Failure -> {
-                    Log.d("Error", "${result.exception}")
-                }
-            }
-        })
-
-        viewModel.fetchTopRatedMovies().observe(viewLifecycleOwner, Observer { result ->
-            when(result){
-                is Result.Loading -> {
-                    Log.d("Livedata", "Loading")
-                }
-                is Result.Success -> {
-                    Log.d("Livedata", "${result.data}")
-                }
-                is Result.Failure -> {
-                    Log.d("Error", "${result.exception}")
-                }
-            }
-        })
-
+    override fun onMovieClick(movie: Movie) {
+        Log.d("Movie", "onMovieClick: $movie")
     }
 }
